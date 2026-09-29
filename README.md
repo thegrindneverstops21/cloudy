@@ -39,8 +39,8 @@ A responsive, location-aware weather app built with React, TypeScript, and Vite.
 
 ```bash
 # clone the repo
-git clone https://github.com/thegrindneverstops21/weather-app.git
-cd weather-app
+git clone https://github.com/thegrindneverstops21/cloudy.git
+cd cloudy
 
 # install dependencies
 npm install
