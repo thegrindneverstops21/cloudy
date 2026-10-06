@@ -9,29 +9,35 @@ interface GeolocationState {
   permissionDenied: boolean;
 }
 
+// Check if browser can do geolocation
+const isGeolocationSupported = () =>
+  typeof navigator !== "undefined" && !!navigator.geolocation;
+
 /* start of custom hook, setting the state of variables to null & loading to true while requesting location data */
 export function useGeolocation() {
-  const [state, setState] = useState<GeolocationState>({
-    latitude: null,
-    longitude: null,
-    loading: true,
-    error: null,
-    permissionDenied: false,
-  });
+  //check if geolocation works and provide appropiate message if otherwise
+  const [state, setState] = useState<GeolocationState>(() =>
+    isGeolocationSupported()
+      ? {
+          latitude: null,
+          longitude: null,
+          loading: true,
+          error: null,
+          permissionDenied: false,
+        }
+      : {
+          latitude: null,
+          longitude: null,
+          loading: false,
+          error: "Geolocation is not supported in your browser",
+          permissionDenied: false,
+        },
+  );
 
-  /* check browser geo-location */
+  /* ask browser for user location */
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setState({
-        latitude: null,
-        longitude: null,
-        loading: false,
-        error: "Geolocation is not supported by your browser",
-        permissionDenied: false,
-      });
-      return;
-    }
-
+    if (!isGeolocationSupported()) return;
+    
     /* callback function if the browser successfully obtains the user's current location */
     navigator.geolocation.getCurrentPosition(
       (position) => {

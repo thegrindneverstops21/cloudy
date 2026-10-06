@@ -31,13 +31,23 @@ interface CachedWeather {
 const CACHE_PREFIX = "weather-app-cache";
 const CACHE_AGE_MAX = 30 * 60 * 1000;
 
-function getCacheKey(location: Location) {
-  return `${CACHE_PREFIX}${location.latitude.toFixed(2)}-${location.longitude.toFixed(2)}`;
+// return this if there's no weather data available, or if the location is null
+const EMPTY_STATE: WeatherState = {
+  current: null,
+  hourly: [],
+  daily: [],
+  loading: true,
+  error: null,
+  isFromCache: false,
+};
+
+function getCacheKey(lat: number, lon: number) {
+  return `${CACHE_PREFIX}${lat.toFixed(2)}-${lon.toFixed(2)}`;
 }
 
-function readCache(location: Location): CachedWeather | null {
+function readCache(lat: number, lon: number): CachedWeather | null {
   try {
-    const raw = localStorage.getItem(getCacheKey(location));
+    const raw = localStorage.getItem(getCacheKey(lat, lon));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -45,14 +55,18 @@ function readCache(location: Location): CachedWeather | null {
 }
 
 function writeCache(
-  location: Location,
+  lat: number,
+  lon: number,
   data: Omit<CachedWeather, "fetchedAt">,
 ) {
   const payload: CachedWeather = { ...data, fetchedAt: Date.now() };
-  localStorage.setItem(getCacheKey(location), JSON.stringify(payload));
+  localStorage.setItem(getCacheKey(lat, lon), JSON.stringify(payload));
 }
 
 export function useWeather(location: Location | null) {
+  const lat = location?.latitude;
+  const lon = location?.longitude;
+
   const [state, setState] = useState<WeatherState>({
     current: null,
     hourly: [],
@@ -63,25 +77,21 @@ export function useWeather(location: Location | null) {
   });
 
   useEffect(() => {
-    if (!location) {
-      setState({
-        current: null,
-        hourly: [],
-        daily: [],
-        loading: false,
-        error: null,
-        isFromCache: false,
-      });
-      return;
-    }
+    if (lat === undefined || lon === undefined) return;
 
-    const currentLocation = location;
+    const latitude = lat;
+    const longitude = lon;
     let cancelled = false;
 
     async function load() {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-      const cached = readCache(currentLocation);
-      const cacheIsFresh = cached && Date.now() - cached.fetchedAt < CACHE_AGE_MAX;
+      setState((prev) => ({
+        ...prev,
+        loading: true,
+        error: null,
+      }));
+      const cached = readCache(latitude, longitude);
+      const cacheIsFresh =
+        cached && Date.now() - cached.fetchedAt < CACHE_AGE_MAX;
       if (cached && !cancelled) {
         setState({
           current: cached.current,
@@ -94,17 +104,14 @@ export function useWeather(location: Location | null) {
       }
 
       try {
-        const raw = await fetchWeatherData(
-          currentLocation.latitude,
-          currentLocation.longitude,
-        );
+        const raw = await fetchWeatherData(latitude, longitude);
         if (cancelled) return;
 
         const current = mapCurrentWeather(raw);
         const hourly = mapHourlyWeather(raw);
         const daily = mapDailyWeather(raw);
 
-        writeCache(currentLocation, { current, hourly, daily });
+        writeCache(latitude, longitude, { current, hourly, daily });
 
         if (cancelled) return;
         setState({
@@ -124,7 +131,7 @@ export function useWeather(location: Location | null) {
             loading: false,
             error: cacheIsFresh
               ? null
-              :"Showing cached data, failed to refresh",
+              : "Showing cached data, failed to refresh",
           }));
         } else {
           setState({
@@ -147,7 +154,7 @@ export function useWeather(location: Location | null) {
     return () => {
       cancelled = true;
     };
-  }, [location?.latitude, location?.longitude]);
+  }, [lat, lon]);
 
-  return state;
+  return location ? state: EMPTY_STATE;
 }
