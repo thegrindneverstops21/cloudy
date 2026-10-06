@@ -50,20 +50,24 @@
     gap: 0.5rem;
     min-width: 0;
     width: 100%;
+    position: relative;
 }
 
 .hourly-toggle-button {
+    position: absolute;
+    top: 0;
+    right: 0.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.3rem;
-    align-self: center;
     background: none;
     border: 1px solid var(--border);
     border-radius: 999px;
     padding: 0.4rem 1rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
+    z-index: 10;
 }
 
 .hourly-toggle-button:hover {
