@@ -1,7 +1,7 @@
 import {
     Sun, Moon, CloudSun, CloudMoon, Cloud, CloudFog, CloudDrizzle,
     CloudRain, CloudRainWind, CloudSnow, CloudLightning, HelpCircle,
-    Droplets, Thermometer, Gauge, Eye, Sunrise, History,
+    Droplets, Thermometer, Gauge, Eye, Sunrise, History, Wind,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -9,7 +9,7 @@ import {
 const ICON_MAP: Record<string, LucideIcon> = {
     Sun, Moon, CloudSun, CloudMoon, Cloud, CloudFog, CloudDrizzle,
     CloudRain, CloudRainWind, CloudSnow, CloudLightning,
-    Droplets, Thermometer, Gauge, Eye, Sunrise, History,
+    Droplets, Thermometer, Gauge, Eye, Sunrise, History, Wind
 };
 
 /*interface that defines the shape of the Icon properties */
