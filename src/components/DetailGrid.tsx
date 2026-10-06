@@ -73,6 +73,7 @@ export default function DetailsGrid({ current, hourlyNow, dailyToday, units }: D
                 value={formatValue(current.feelsLike)}
                 unit={`°${units.temperature}`}
             />
+            
         </div>
     );
 }
