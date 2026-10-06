@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { type ReactNode } from 'react';
 import { type Location } from '../types/weather';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -27,40 +27,50 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     /* read geo-location using custom hook */
     const { latitude, longitude, loading, permissionDenied } = useGeolocation();
     /* current location */
-    const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
+    const [place, setPlace] = useState<{name: string, country: string} | null>(null);
     /* saved location from local storage*/
     const [savedLocations, setSavedLocations] = useState<Location[]>(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
         return saved ?  JSON.parse(saved) : [];
     });
     /* active location from local storage */
-    const [activeLocation, setActiveLocationState] = useState<Location | null>(() => {
+    const [activeLocationState, setActiveLocationState] = useState<Location | null>(() => {
         const saved = localStorage.getItem(ACTIVE_KEY);
         return saved ? JSON.parse(saved) : null;
     });
+
+    const currentLocation = useMemo<Location | null>(() => {
+        if(latitude === null || longitude === null) return null;
+
+        return {
+            id: 'current-location',
+            name: place?.name ?? 'current-location',
+            country: place?.country ?? '',
+            latitude,
+            longitude,
+            isCurrentLocation: true,
+        };
+    }, [latitude, longitude, place]);
+
+    //if nothing is picked, follow live location
+    const activeLocation = useMemo<Location | null>(() => {
+        if(!activeLocationState || activeLocationState.id === 'current-location'){
+            return currentLocation ?? activeLocationState;
+        }
+        return activeLocationState;
+    }, [activeLocationState, currentLocation]);
     /* provides and stores location if coordinates are available*/
     useEffect(() => {
-        if (latitude !== null && longitude !== null) {
-            const placeholder: Location = {
-                id: 'current-location', 
-                name: 'Current Location',
-                country: '',
-                latitude,
-                longitude,
-                isCurrentLocation: true,
-            };
-            setCurrentLocation(placeholder);
-            setActiveLocationState((prev) => prev ?? placeholder);
-
-            reverseGeocode(latitude, longitude).then(({ name, country}) => {
-                const resolved: Location = { ...placeholder, name, country };
-                setCurrentLocation(resolved);
-                setActiveLocationState((prev) => prev?.id === 'current-location' ? resolved : prev);
-            })
-            .catch((err) => {
-                console.error('reverse geocoding failed: ', err);
-            })
-        }
+        if (latitude === null || longitude === null) return;
+        let cancelled = false;
+        reverseGeocode(latitude, longitude).then(({name, country}) => {
+            if(!cancelled) setPlace({name, country})
+        }).catch((err) => {
+                console.error("reverse geocoding failed", err);
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [latitude, longitude]);
 
     /* persist location as saved location to local storage */
